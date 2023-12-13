@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-	id("org.springframework.boot") version "3.2.0"
-	id("io.spring.dependency-management") version "1.1.4"
-	kotlin("jvm") version "1.9.10"
-	kotlin("plugin.spring") version "1.9.10"
+	id("org.springframework.boot") version "2.7.9"
+	id("io.spring.dependency-management") version "1.0.15.RELEASE"
+	kotlin("jvm") version "1.6.21"
+	kotlin("plugin.spring") version "1.6.21"
 	/**
 	 * detekt
 	 *
@@ -20,7 +20,7 @@ plugins {
 	 * 概要
 	 * KotlinのLinter/Formatter
 	 */
-	id("io.gitlab.arturbosch.detekt") version "1.23.3"
+	id("io.gitlab.arturbosch.detekt") version "1.21.0"
 	/**
 	 * dokka
 	 *
@@ -35,7 +35,7 @@ plugins {
 	 * 概要
 	 * - JDocの代替(=KDoc)
 	 */
-	id("org.jetbrains.dokka") version "1.9.10"
+	id("org.jetbrains.dokka") version "1.7.20"
 	/**
 	 * openapi.generator
 	 *
@@ -59,10 +59,7 @@ plugins {
 
 group = "com.example"
 version = "0.0.1-SNAPSHOT"
-
-java {
-	sourceCompatibility = JavaVersion.VERSION_17
-}
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
 	mavenCentral()
@@ -72,6 +69,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	/**
 	 * detektの拡張: detekt-formatting
@@ -81,13 +79,13 @@ dependencies {
 	 * - 基本はktlintと同じ
 	 * - format自動適用オプションの autoCorrect が使えるようになる
 	 */
-	detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.3")
+	detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.21.0")
 	/**
 	 * dokkaHtmlPlugin
 	 *
 	 * dokka Pluginを適用するのに必要
 	 */
-	dokkaPlugin("org.jetbrains.dokka:android-documentation-plugin:1.9.10")
+	dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:1.7.20")
 	/**
 	 * Arrow Core
 	 *
@@ -102,7 +100,7 @@ dependencies {
 	 * 概要
 	 * - Kotlinで関数型プログラミングをするときに便利なライブラリ
 	 */
-	implementation("io.arrow-kt:arrow-core:1.2.0")
+	implementation("io.arrow-kt:arrow-core:1.1.3")
 	/**
 	 * AssertJ
 	 *
@@ -156,7 +154,6 @@ dependencies {
 	compileOnly("io.swagger.core.v3:swagger-annotations:2.2.6")
 	compileOnly("io.swagger.core.v3:swagger-models:2.2.6")
 	compileOnly("jakarta.annotation:jakarta.annotation-api:2.1.1")
-
 	/**
 	 * Spring Boot Starter Validation
 	 *
@@ -172,6 +169,21 @@ dependencies {
 	 * [Spring-Boot-2.3ではjavax.validationを依存関係に追加しなければならない](https://qiita.com/tatetsujitomorrow/items/a397c311a95d66e4f955)
 	 */
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	/**
+	 * Spring JDBC
+	 *
+	 * URL
+	 * - https://spring.pleiades.io/spring-framework/docs/current/javadoc-api/org/springframework/jdbc/core/package-summary.html
+	 * MavenCentral
+	 * - https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-jdbc
+	 * Main用途
+	 * - DBへ保存
+	 * 概要
+	 * - 特になし
+	 *
+	 * これを入れるだけで、application.properties/yamlや@ConfigurationによるDB接続設定が必要になる
+	 */
+	implementation("org.springframework.boot:spring-boot-starter-jdbc")
 	/**
 	 * postgresql
 	 *
@@ -210,13 +222,28 @@ dependencies {
 
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
-		freeCompilerArgs += "-Xjsr305=strict"
+		freeCompilerArgs = listOf("-Xjsr305=strict")
 		jvmTarget = "17"
 	}
 }
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+/**
+ * detektの設定
+ *
+ * 基本的に全て `detekt-override.yml` で設定する
+ */
+detekt {
+	/**
+	 * ./gradlew detektGenerateConfig でdetekt.ymlが生成される(バージョンが上がる度に再生成する)
+	 */
+	config = files(
+			"$projectDir/config/detekt/detekt.yml",
+			"$projectDir/config/detekt/detekt-override.yml"
+	)
 }
 
 /**
@@ -256,19 +283,4 @@ tasks.compileKotlin {
  */
 kotlin.sourceSets.main {
 	kotlin.srcDir("$buildDir/openapi/server-code/src/main")
-}
-
-/**
- * detektの設定
- *
- * 基本的に全て `detekt-override.yml` で設定する
- */
-detekt {
-	/**
-	 * ./gradlew detektGenerateConfig でdetekt.ymlが生成される(バージョンが上がる度に再生成する)
-	 */
-	config = files(
-			"$projectDir/config/detekt/detekt.yml",
-			"$projectDir/config/detekt/detekt-override.yml",
-	)
 }
